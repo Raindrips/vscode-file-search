@@ -1,0 +1,42 @@
+{
+  "name": "project-file-search",
+  "displayName": "Project File Search",
+  "description": "Search project files by name using a QuickPick UI.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onCommand:projectFileSearch.search"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "projectFileSearch.search",
+        "title": "Search Project Files"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "projectFileSearch.search",
+        "key": "ctrl+alt+p",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "fuse.js": "^6.6.2"
+  }
+}
