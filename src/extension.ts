@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import Fuse = require('fuse.js');
+import { FuseTool, FileItem as BaseFIleItem } from './FuseTool';
 
 interface FileItem extends vscode.QuickPickItem {
     uri: vscode.Uri;
@@ -21,11 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
             }));
 
             // 2. 模糊搜索引擎
-            const fuse = new Fuse(items, {
-                keys: ['label'],
-                threshold: 0.4,
-                ignoreLocation: true
-            });
+            const fuseTool = new FuseTool(items);
 
             // 3. QuickPick UI
             const quickPick = vscode.window.createQuickPick<FileItem>();
@@ -38,14 +34,8 @@ export function activate(context: vscode.ExtensionContext) {
 
             // 4. 输入时实时过滤
             quickPick.onDidChangeValue((value) => {
-                // quickPick.items = items;
-
-                if (!value) {
-                    quickPick.items = items;
-                } else {
-                    const results = fuse.search(value).map((r) => r.item);
-                    quickPick.items = results;
-                }
+                const results = fuseTool.search(value);
+                quickPick.items = results;
             });
 
             // 5. 打开文件

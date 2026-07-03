@@ -63,3 +63,4 @@ creator.d.ts
 node_modules/
 doc/*
 backup/*
+*.vsix
