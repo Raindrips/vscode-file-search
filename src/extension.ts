@@ -1,55 +1,41 @@
 import * as vscode from 'vscode';
-import { FuseTool, FileItem as BaseFIleItem } from './FuseTool';
+import { ProjectFileIndex } from './ProjectFileIndex';
 
-interface FileItem extends vscode.QuickPickItem {
-    uri: vscode.Uri;
-}
+export async function activate(context: vscode.ExtensionContext) {
 
-export function activate(context: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerCommand(
-        'projectFileSearch.search',
-        async () => {
-            // 1. 扫描项目文件
-            const uris = await vscode.workspace.findFiles(
-                '**/*',
-                '**/node_modules/**',
-            );
+    const index = new ProjectFileIndex();
+    await index.init();
 
-            const items: FileItem[] = uris.map((uri) => ({
-                label: vscode.workspace.asRelativePath(uri),
-                uri,
+    const disposable = vscode.commands.registerCommand('projectFileSearch.search', async () => {
+
+        const quickPick = vscode.window.createQuickPick();
+        quickPick.placeholder = 'Search project files...';
+
+        quickPick.items = index.getAll().map(i => ({
+            label: i.label,
+            // detail: i.uri.fsPath
+        }));
+
+        quickPick.onDidChangeValue(value => {
+            const results = index.search(value);
+            quickPick.items = results.map(i => ({
+                label: i.label,
+                // detail: i.uri.fsPath
             }));
+        });
 
-            // 2. 模糊搜索引擎
-            const fuseTool = new FuseTool(items);
+        quickPick.onDidAccept(() => {
+            const selected = quickPick.selectedItems[0];
+            const file = index.getAll().find(i => i.label === selected.label);
+            if (file) vscode.window.showTextDocument(file.uri);
+            quickPick.hide();
+        });
 
-            // 3. QuickPick UI
-            const quickPick = vscode.window.createQuickPick<FileItem>();
-            quickPick.placeholder = 'Search project files...';
-            quickPick.items = items;
-
-            // 使用自带的模糊搜索
-            quickPick.matchOnDescription = true;
-            quickPick.matchOnDetail = true;
-
-            // 4. 输入时实时过滤
-            quickPick.onDidChangeValue((value) => {
-                const results = fuseTool.search(value);
-                quickPick.items = results;
-            });
-
-            // 5. 打开文件
-            quickPick.onDidAccept(() => {
-                const item = quickPick.selectedItems[0];
-                vscode.window.showTextDocument(item.uri);
-                quickPick.hide();
-            });
-
-            quickPick.show();
-        },
-    );
+        quickPick.show();
+    });
 
     context.subscriptions.push(disposable);
+    context.subscriptions.push({ dispose: () => index.dispose() });
 }
 
 export function deactivate() {}

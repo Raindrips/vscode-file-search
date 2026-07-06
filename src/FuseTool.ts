@@ -1,9 +1,11 @@
 import Fuse = require('fuse.js');
+import * as vscode from 'vscode';
+
 type Fuse<T> = Fuse.default<T>;
 
 export interface FileItem {
     label: string;
-    uri: any;
+    uri: vscode.Uri;
 }
 
 export class FuseTool {
@@ -25,5 +27,21 @@ export class FuseTool {
             return this.items;
         }
         return this.fuse.search(value).map((r) => r.item);
+    }
+
+    add(item: FileItem): void {
+        this.items.push(item);
+        this.fuse.add(item);
+    }
+
+    remove(predicate: (doc: FileItem) => boolean): void {
+        this.items = this.items.filter(item => !predicate(item));
+        //@ts-ignore
+        this.fuse.remove(predicate);
+    }
+
+    setCollection(items: FileItem[]): void {
+        this.items = items;
+        this.fuse.setCollection(items);
     }
 }
