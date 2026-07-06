@@ -6,6 +6,7 @@ type Fuse<T> = Fuse.default<T>;
 export interface FileItem {
     label: string;
     uri: vscode.Uri;
+    iconPath?: vscode.ThemeIcon 
 }
 
 export class FuseTool {
@@ -17,8 +18,9 @@ export class FuseTool {
         //@ts-ignore
         this.fuse = new Fuse(items, {
             keys: ['label'],
-            threshold: 0.4,
+            threshold: 0.3,
             ignoreLocation: true,
+            minMatchCharLength: 2
         });
     }
 

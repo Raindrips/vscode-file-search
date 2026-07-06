@@ -11,16 +11,22 @@ export async function activate(context: vscode.ExtensionContext) {
         const quickPick = vscode.window.createQuickPick();
         quickPick.placeholder = 'Search project files...';
 
+        //@ts-ignore
         quickPick.items = index.getAll().map(i => ({
             label: i.label,
             // detail: i.uri.fsPath
+            iconPath: i.iconPath,
+            resourceUri: i
         }));
 
         quickPick.onDidChangeValue(value => {
             const results = index.search(value);
+            //@ts-ignore
             quickPick.items = results.map(i => ({
                 label: i.label,
                 // detail: i.uri.fsPath
+                iconPath: i.iconPath,
+                resourceUri: i
             }));
         });
 

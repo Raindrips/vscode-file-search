@@ -1,9 +1,7 @@
-// src/ProjectFileIndex.ts
 import * as vscode from 'vscode';
 import { FuseTool, FileItem } from './FuseTool';
 import { minimatch } from 'minimatch';
-
-export { FileItem };
+import { FileIconProvider } from './FileIconProvider';
 
 export class ProjectFileIndex {
     private items: FileItem[] = [];
@@ -48,6 +46,7 @@ export class ProjectFileIndex {
         this.items = uris.map((uri) => ({
             label: vscode.workspace.asRelativePath(uri),
             uri,
+            iconPath: FileIconProvider.getIcon(uri)
         }));
 
         this.fuseTool.setCollection(this.items);
