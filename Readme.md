@@ -1,26 +1,31 @@
 # Project File Search
 
-[中文](./Readme-zh.md)
+[中文](https://github.com/Raindrips/vscode-file-search/README.zh.md)
 
 A fast, clean, workspace‑only file name searcher.  
-It offers search functionality similar to `Ctrl+P`, but limits the search to files within the current workspace.Features
+It offers search functionality similar to `Ctrl+P`, but limits the search
+to files within the current workspace.Features
 
 - Search project files by name
 - Configurable keybinding
 - Configurable include/exclude patterns
 
 ## Why this extension?
-VS Code’s built‑in Ctrl+P mixes:
-- recently opened files  
-- files from other projects  
-- diff views  
-- temporary files  
 
-This extension provides a **pure project file searcher** that only shows files inside the current workspace.
+VS Code’s built‑in Ctrl+P mixes:
+
+- recently opened files
+- files from other projects
+- diff views
+- temporary files
+
+This extension provides a **pure project file searcher** that only shows
+files inside the current workspace.
 
 ## Usage
 
-Press `Ctrl+Alt+P` to open the file search panel. Or run:projectFileSearch.search
+Press `Ctrl+Alt+P` to open the file search panel. Or
+run:projectFileSearch.search
 
 ## Configuration
 
@@ -56,5 +61,10 @@ Add these settings to your VS Code configuration:
 - File system watcher
 - Include/exclude configuration
 
+### 0.1.1
+
+- Modify the command key binding when.
+
 ## License
+
 MIT License

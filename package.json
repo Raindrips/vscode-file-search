@@ -33,7 +33,7 @@
             {
                 "command": "projectFileSearch.search",
                 "key": "ctrl+alt+p",
-                "when": "workspaceFolderCount > 0 && !inputFocus"
+                "when": "workspaceFolderCount > 0"
             }
         ],
         "configuration": {
