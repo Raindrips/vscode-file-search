@@ -23,7 +23,6 @@ vite.config.ts
 rollup.config.js
 
 # 排除文档和杂项
-README.md
 .vscode/**
 .git/**
 .gitignore
