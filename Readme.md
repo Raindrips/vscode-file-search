@@ -1,6 +1,6 @@
 # Project File Search
 
-[中文](https://github.com/Raindrips/vscode-file-search/blob/main/Readme.zh.md)
+[中文](https://github.com/Raindrips/vscode-file-search/blob/main/README.zh.md)
 
 A fast, clean, workspace‑only file name searcher.  
 It offers search functionality similar to `Ctrl+P`, but limits the search
@@ -61,7 +61,7 @@ Add these settings to your VS Code configuration:
 - File system watcher
 - Include/exclude configuration
 
-### 0.1.1
+### 0.1.2
 
 - Modify the command key binding when.
 

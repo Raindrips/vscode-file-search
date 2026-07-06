@@ -1,6 +1,6 @@
 # Project File Search
 
-[English](hhttps://github.com/Raindrips/vscode-file-search/blob/main/Readme.md)
+[English](https://github.com/Raindrips/vscode-file-search/blob/main/README.md)
 
 一个快速、简洁、仅限工作区的文件名搜索器。  
 它提供类似 `Ctrl+P` 的搜索功能，但搜索范围严格限制在当前工作区内。
@@ -61,7 +61,7 @@ VS Code 内置的 Ctrl+P 会混合以下内容：
 - 文件系统监听
 - include/exclude 配置支持
 
-### 0.1.1
+### 0.1.2
 
 - 修改命令键绑定的 `when` 条件
 

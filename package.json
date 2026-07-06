@@ -26,7 +26,8 @@
         "commands": [
             {
                 "command": "projectFileSearch.search",
-                "title": "Search Project Files"
+                "title": "Search Project Files",
+                "category": "Project File Search"
             }
         ],
         "keybindings": [
