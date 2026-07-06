@@ -1,0 +1,36 @@
+# 排除 TypeScript 源码
+src/**
+**/*.ts
+**/*.map
+
+# 排除 node_modules（只保留生产依赖）
+node_modules/**
+!node_modules/*/package.json
+!node_modules/*/dist/**
+!node_modules/*/lib/**
+!node_modules/*/build/**
+
+# 排除测试文件
+test/**
+tests/**
+__tests__/**
+
+# 排除构建工具配置
+webpack.config.js
+tsconfig.json
+tsconfig.build.json
+vite.config.ts
+rollup.config.js
+
+# 排除文档和杂项
+README.md
+.vscode/**
+.git/**
+.gitignore
+.eslintignore
+.eslintrc*
+.prettier*
+*.log
+
+# 排除图片源文件（如 SVG）
+images/*.svg
