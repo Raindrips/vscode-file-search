@@ -1,6 +1,6 @@
 # Project File Search
 
-[English](https://github.com/Raindrips/vscode-file-search/README.md)
+[English](hhttps://github.com/Raindrips/vscode-file-search/blob/main/Readme.md)
 
 一个快速、简洁、仅限工作区的文件名搜索器。  
 它提供类似 `Ctrl+P` 的搜索功能，但搜索范围严格限制在当前工作区内。
