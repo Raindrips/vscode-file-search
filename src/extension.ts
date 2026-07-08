@@ -2,38 +2,38 @@ import * as vscode from 'vscode';
 import { ProjectFileIndex } from './ProjectFileIndex';
 
 export async function activate(context: vscode.ExtensionContext) {
-
     const index = new ProjectFileIndex();
     await index.init();
 
     const disposable = vscode.commands.registerCommand('projectFileSearch.search', async () => {
-
         const quickPick = vscode.window.createQuickPick();
-        quickPick.placeholder = 'Search project files...';
+        quickPick.placeholder = 'Search project files... v1.5';
 
-        //@ts-ignore
-        quickPick.items = index.getAll().map(i => ({
-            label: i.label,
-            // detail: i.uri.fsPath
-            iconPath: i.iconPath,
-            resourceUri: i
+        quickPick.items = index.getAll().map((v,i) => ({
+            label:v.label,
+            description: v.description,
+            iconPath: v.iconPath,
+            resourceUri: v.uri,
         }));
 
-        quickPick.onDidChangeValue(value => {
+        quickPick.onDidChangeValue((value) => {
             const results = index.search(value);
-            //@ts-ignore
-            quickPick.items = results.map(i => ({
-                label: i.label,
-                // detail: i.uri.fsPath
-                iconPath: i.iconPath,
-                resourceUri: i
+            quickPick.items = results.map((v) => ({
+                label: v.label,
+                description: v.description,
+                iconPath: v.iconPath,
+                resourceUri: v.uri,
             }));
         });
 
         quickPick.onDidAccept(() => {
             const selected = quickPick.selectedItems[0];
-            const file = index.getAll().find(i => i.label === selected.label);
-            if (file) vscode.window.showTextDocument(file.uri);
+            const file = index
+                .getAll()
+                .find((i) => i.label === selected.label && i.description === selected.description);
+            if (file && file.uri) {
+                vscode.window.showTextDocument(file.uri);
+            }
             quickPick.hide();
         });
 

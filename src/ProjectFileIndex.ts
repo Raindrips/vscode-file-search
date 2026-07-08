@@ -39,15 +39,18 @@ export class ProjectFileIndex {
     }
 
     private async buildIndex() {
-        const excludeGlob = this.exclude.join(',');
-
         const uris = await vscode.workspace.findFiles(this.include, `{${this.exclude.join(',')}}`);
 
-        this.items = uris.map((uri) => ({
-            label: vscode.workspace.asRelativePath(uri),
-            uri,
-            iconPath: FileIconProvider.getIcon(uri)
-        }));
+        this.items = uris.map((uri) => {
+            const relativePath = vscode.workspace.asRelativePath(uri);
+            const lastSlash = relativePath.lastIndexOf('/');
+            return {
+                label: lastSlash >= 0 ? relativePath.slice(lastSlash + 1) : relativePath,
+                description: lastSlash >= 0 ? relativePath.slice(0, lastSlash) : '',
+                uri,
+                iconPath: FileIconProvider.getIcon(uri)
+            };
+        });
 
         this.fuseTool.setCollection(this.items);
     }
@@ -59,9 +62,13 @@ export class ProjectFileIndex {
         this.watcher.onDidCreate((uri) => {
             if (this.shouldExclude(uri)) return;
 
+            const relativePath = vscode.workspace.asRelativePath(uri);
+            const lastSlash = relativePath.lastIndexOf('/');
             const item: FileItem = {
-                label: vscode.workspace.asRelativePath(uri),
+                label: lastSlash >= 0 ? relativePath.slice(lastSlash + 1) : relativePath,
+                description: lastSlash >= 0 ? relativePath.slice(0, lastSlash) : '',
                 uri,
+                
             };
 
             this.items.push(item);
@@ -69,18 +76,15 @@ export class ProjectFileIndex {
         });
 
         this.watcher.onDidDelete((uri) => {
-            const label = vscode.workspace.asRelativePath(uri);
-            this.items = this.items.filter((i) => i.label !== label);
-            this.fuseTool.remove((doc) => doc.label === label);
+            this.items = this.items.filter((i) => i.uri!.fsPath !== uri.fsPath);
+            this.fuseTool.remove((doc) => doc.uri!.fsPath === uri.fsPath);
         });
 
         this.watcher.onDidChange((uri) => {
-            const label = vscode.workspace.asRelativePath(uri);
-            const item = this.items.find((i) => i.label === label);
+            const item = this.items.find((i) => i.uri!.fsPath === uri.fsPath);
             if (!item) return;
 
-            item.label = label;
-            this.fuseTool.remove((doc) => doc.uri.fsPath === uri.fsPath);
+            this.fuseTool.remove((doc) => doc.uri!.fsPath === uri.fsPath);
             this.fuseTool.add(item);
         });
     }

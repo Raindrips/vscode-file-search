@@ -69,6 +69,10 @@ Add these settings to your VS Code configuration:
 
 - add File Icon.
 
+### 0.1.5
+- Optimize UI display
+- Optimize the search experience
+
 ## License
 
 MIT License
@@ -143,6 +147,10 @@ VS Code 内置的 Ctrl+P 会混合以下内容：
 ### 0.1.3
 
 - 添加文件图标
+
+### 0.1.5
+- 优化UI展示
+- 优化搜索体验
 
 ## 许可
 

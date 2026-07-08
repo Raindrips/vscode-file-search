@@ -7,6 +7,7 @@ export interface FileItem {
     label: string;
     uri: vscode.Uri;
     iconPath?: vscode.ThemeIcon 
+    description:string
 }
 
 export class FuseTool {

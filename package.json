@@ -3,7 +3,7 @@
     "publisher": "Raindrips",
     "displayName": "File Search",
     "description": "Search project files by name.",
-    "version": "0.1.3",
+    "version": "0.1.5",
     "engines": {
         "vscode": "^1.90.0"
     },
