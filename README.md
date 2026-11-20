@@ -18,18 +18,6 @@ are matched — file contents are never searched.
 - Background file index kept up to date by a file system watcher.
 - Configurable include/exclude globs and a result limit.
 
-## Why this extension?
-
-VS Code's built-in `Ctrl+P` mixes:
-
-- recently opened files
-- files from other projects
-- diff views
-- temporary files
-
-This extension provides a **pure project file searcher** that only shows files
-inside the current workspace, in a persistent view instead of a modal picker.
-
 ## Usage
 
 Open the **File Search** view from the activity bar, press `Ctrl+Alt+P`, or run
@@ -61,9 +49,7 @@ title rebuilds the index manually.
     ],
     "projectFileSearch.exclude": [
         "**/node_modules/**",
-        "**/.git/**",
-        "**/dist/**",
-        "**/build/**"
+        "**/.git/**"
     ],
     "projectFileSearch.maxResults": 300
 }
@@ -71,7 +57,9 @@ title rebuilds the index manually.
 
 `projectFileSearch.include` — Glob patterns for included files.
 
-`projectFileSearch.exclude` — Glob patterns for excluded files.
+`projectFileSearch.exclude` — Glob patterns for excluded files. The defaults
+skip `.git` and `node_modules`; add more patterns to exclude generated folders
+such as `dist` or `build`.
 
 `projectFileSearch.maxResults` — Maximum number of rendered results (10–2000).
 A note is shown when more files match.
@@ -100,8 +88,8 @@ A note is shown when more files match.
 
 ### 0.1.5
 
-- Optimize UI display
-- Optimize the search experience
+- Optimize UI display.
+- Optimize the search experience.
 
 ### 0.2.0
 
@@ -110,6 +98,7 @@ A note is shown when more files match.
 - Add match highlighting, file-type icons, result counts and truncation notes.
 - Add a context menu, keyboard navigation and a result limit setting.
 - Keep the view state across reloads and refresh the index from the view title.
+- Update the activity bar icon to a magnifier containing a file.
 
 ## License
 
@@ -121,9 +110,9 @@ MIT License
 
 [English](#file-search)
 
-一个快速、简洁、仅限工作区的文件名搜索器，拥有独立的侧边栏视图。界面布局
-参照内置的搜索视图（`Ctrl+Shift+F`）：搜索框、选项开关、结果计数和带高亮的
-结果列表。只匹配文件和文件夹名称，从不搜索文件内容。
+一个快速、仅限工作区的文件名搜索器，拥有独立的侧边栏视图。界面布局参照内置
+的搜索视图（`Ctrl+Shift+F`）：搜索框、选项开关、结果计数和带高亮的结果列表。
+只匹配文件和文件夹名称，从不搜索文件内容。
 
 ## 功能特性
 
@@ -135,18 +124,6 @@ MIT License
 - 以键盘操作为主，并提供常用文件操作的右键菜单。
 - 文件系统监听器在后台保持索引最新。
 - 可配置 include / exclude 模式与结果数量上限。
-
-## 为什么需要这个扩展？
-
-VS Code 内置的 `Ctrl+P` 会混合以下内容：
-
-- 最近打开的文件
-- 其他项目的文件
-- diff 视图
-- 临时文件
-
-本扩展提供一个 **纯净的项目文件搜索器**，只显示当前工作区内的文件，并使用
-常驻视图代替模态选择器。
 
 ## 使用方法
 
@@ -162,7 +139,7 @@ VS Code 内置的 `Ctrl+P` 会混合以下内容：
 | `Alt+C` | 切换匹配大小写 |
 | `Alt+R` | 切换正则表达式 |
 | `Alt+P` | 同时匹配文件夹名称 |
-| `Arrow Up` / `Arrow Down` | 移动选中项 |
+| `↑` / `↓` | 移动选中项 |
 | `Page Up` / `Page Down` | 按十项移动 |
 | `Escape` | 清空搜索；再次按下返回编辑器 |
 
@@ -178,9 +155,7 @@ VS Code 内置的 `Ctrl+P` 会混合以下内容：
     ],
     "projectFileSearch.exclude": [
         "**/node_modules/**",
-        "**/.git/**",
-        "**/dist/**",
-        "**/build/**"
+        "**/.git/**"
     ],
     "projectFileSearch.maxResults": 300
 }
@@ -188,7 +163,8 @@ VS Code 内置的 `Ctrl+P` 会混合以下内容：
 
 `projectFileSearch.include`：用于包含文件的 Glob 模式（数组）。
 
-`projectFileSearch.exclude`：用于排除文件的 Glob 模式。
+`projectFileSearch.exclude`：用于排除文件的 Glob 模式。默认跳过 `.git` 与
+`node_modules`；如需排除 `dist`、`build` 等生成目录，可继续添加模式。
 
 `projectFileSearch.maxResults`：最大渲染结果数（10–2000）。匹配数量更多时会
 显示提示。
@@ -197,7 +173,7 @@ VS Code 内置的 `Ctrl+P` 会混合以下内容：
 
 ### 0.0.1
 
-- QuickPick UI
+- 使用 QuickPick UI
 - 仅限工作区的文件搜索
 - 模糊搜索
 
@@ -209,16 +185,16 @@ VS Code 内置的 `Ctrl+P` 会混合以下内容：
 
 ### 0.1.2
 
-- 修改命令键绑定的 `when` 条件
+- 修改命令键绑定的 `when` 条件。
 
 ### 0.1.3
 
-- 添加文件图标
+- 添加文件图标。
 
 ### 0.1.5
 
-- 优化 UI 展示
-- 优化搜索体验
+- 优化 UI 显示。
+- 优化搜索体验。
 
 ### 0.2.0
 
@@ -227,6 +203,7 @@ VS Code 内置的 `Ctrl+P` 会混合以下内容：
 - 新增匹配高亮、文件类型图标、结果计数与截断提示。
 - 新增右键菜单、键盘导航与结果数量上限设置。
 - 视图状态在重新加载后保留，并可从标题栏刷新索引。
+- 活动栏图标改为放大镜内含文件图案。
 
 ## 许可
 
