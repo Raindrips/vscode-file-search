@@ -1,133 +1,251 @@
 import * as vscode from 'vscode';
-import { FuseTool, FileItem } from './FuseTool';
 import { minimatch } from 'minimatch';
-import { FileIconProvider } from './FileIconProvider';
+import { FileIconInfo, FileIconProvider } from './FileIconProvider';
+import { SearchEngine, SearchOptions, SearchOutcome, SearchableFile } from './SearchEngine';
 
-export class ProjectFileIndex {
+export interface FileItem extends SearchableFile {
+    /** Absolute path on disk. */
+    fsPath: string;
+    uri: vscode.Uri;
+    icon: FileIconInfo;
+}
+
+export interface IndexState {
+    /** `true` while the workspace is being scanned. */
+    building: boolean;
+    /** Number of indexed files. */
+    fileCount: number;
+}
+
+const DEFAULT_INCLUDE = ['**/*'];
+const DEFAULT_EXCLUDE = ['**/node_modules/**', '**/.git/**'];
+
+/**
+ * Keeps an up-to-date list of the files in the workspace and answers file name
+ * searches against it.
+ */
+export class ProjectFileIndex implements vscode.Disposable {
     private items: FileItem[] = [];
-    private fuseTool: FuseTool;
-    private watcher: vscode.FileSystemWatcher | null = null;
-    private initialized = false;
+    private readonly paths = new Set<string>();
+    private readonly engine = new SearchEngine<FileItem>();
+    private watcher: vscode.FileSystemWatcher | undefined;
+    private readonly disposables: vscode.Disposable[] = [];
+    private include: string[] = DEFAULT_INCLUDE.slice();
+    private exclude: string[] = DEFAULT_EXCLUDE.slice();
+    private building = false;
+    private rebuildQueued = false;
+    private changeTimer: ReturnType<typeof setTimeout> | undefined;
+    private readonly output: vscode.OutputChannel = vscode.window.createOutputChannel('File Search');
+    private readonly changeEmitter = new vscode.EventEmitter<IndexState>();
 
-    private include: string;
-    private exclude: string[];
+    /** Fires when the index starts building, finishes, or changes on disk. */
+    readonly onDidChange = this.changeEmitter.event;
 
     constructor() {
-        // 支持用户自定义配置
-        const config = vscode.workspace.getConfiguration(
-            'projectFileSearch',
+        this.readConfiguration();
+        this.disposables.push(
+            vscode.workspace.onDidChangeConfiguration((event) => {
+                if (
+                    event.affectsConfiguration('projectFileSearch.include') ||
+                    event.affectsConfiguration('projectFileSearch.exclude')
+                ) {
+                    void this.rebuild();
+                }
+            }),
         );
-
-        this.include = config.get<string>('include', '**/*');
-        this.exclude = config.get<string[]>('exclude', [
-            '**/node_modules/**',
-            "**/.git/**",
-        ]);
-
-        this.fuseTool = new FuseTool([]);
+        this.setupWatcher();
     }
 
-    async init() {
-        if (this.initialized) {
+    get state(): IndexState {
+        return { building: this.building, fileCount: this.items.length };
+    }
+
+    /** Builds the initial index. Never throws; failures are reported. */
+    async init(): Promise<void> {
+        await this.rebuild();
+    }
+
+    /** Rebuilds the index from scratch, watching the new configuration. */
+    async rebuild(): Promise<void> {
+        if (this.building) {
+            this.rebuildQueued = true;
             return;
         }
-        this.initialized = true;
-
-        await this.buildIndex();
+        this.building = true;
+        this.readConfiguration();
         this.setupWatcher();
-        this.setupConfigListener();
-    }
+        this.fireChange();
 
-    private async buildIndex() {
-        const uris = await vscode.workspace.findFiles(this.include, `{${this.exclude.join(',')}}`);
-
-        this.items = uris.map((uri) => {
-            const relativePath = vscode.workspace.asRelativePath(uri);
-            const lastSlash = relativePath.lastIndexOf('/');
-            return {
-                label: lastSlash >= 0 ? relativePath.slice(lastSlash + 1) : relativePath,
-                description: lastSlash >= 0 ? relativePath.slice(0, lastSlash) : '',
-                uri,
-                iconPath: FileIconProvider.getIcon(uri)
-            };
-        });
-
-        this.fuseTool.setCollection(this.items);
-    }
-
-    private setupWatcher() {
-        this.watcher?.dispose();
-        this.watcher = vscode.workspace.createFileSystemWatcher(this.include, false, false, false);
-
-        this.watcher.onDidCreate((uri) => {
-            if (this.shouldExclude(uri)) return;
-
-            const relativePath = vscode.workspace.asRelativePath(uri);
-            const lastSlash = relativePath.lastIndexOf('/');
-            const item: FileItem = {
-                label: lastSlash >= 0 ? relativePath.slice(lastSlash + 1) : relativePath,
-                description: lastSlash >= 0 ? relativePath.slice(0, lastSlash) : '',
-                uri,
-                
-            };
-
-            this.items.push(item);
-            this.fuseTool.add(item);
-        });
-
-        this.watcher.onDidDelete((uri) => {
-            this.items = this.items.filter((i) => i.uri!.fsPath !== uri.fsPath);
-            this.fuseTool.remove((doc) => doc.uri!.fsPath === uri.fsPath);
-        });
-
-        this.watcher.onDidChange((uri) => {
-            const item = this.items.find((i) => i.uri!.fsPath === uri.fsPath);
-            if (!item) return;
-
-            this.fuseTool.remove((doc) => doc.uri!.fsPath === uri.fsPath);
-            this.fuseTool.add(item);
-        });
-    }
-
-    private setupConfigListener() {
-        vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration('projectFileSearch')) {
-                const config = vscode.workspace.getConfiguration(
-                    'projectFileSearch',
-                );
-
-                this.include = config.get<string>('include', '**/*');
-                this.exclude = config.get<string[]>('exclude', [
-                    '**/node_modules/**',
-                ]);
-
-                this.rebuild();
+        try {
+            const include = this.globOf(this.include) ?? '**/*';
+            const exclude = this.globOf(this.exclude);
+            const uris = await vscode.workspace.findFiles(include, exclude);
+            const items = uris.map((uri) => this.createItem(uri));
+            this.items = items;
+            this.paths.clear();
+            for (const item of items) {
+                this.paths.add(item.fsPath);
             }
-        });
+            this.engine.setCollection(items);
+        } catch (error) {
+            this.output.appendLine(`[error] Failed to index workspace files: ${describeError(error)}`);
+            void vscode.window.showErrorMessage(
+                'File Search: failed to index workspace files. See the "File Search" output channel for details.',
+            );
+        } finally {
+            this.building = false;
+            this.fireChange();
+            if (this.rebuildQueued) {
+                this.rebuildQueued = false;
+                void this.rebuild();
+            }
+        }
     }
 
-    private async rebuild() {
-        await this.buildIndex();
-        this.setupWatcher();
+    search(query: string, options: SearchOptions, limit: number): SearchOutcome<FileItem> {
+        return this.engine.search(query, options, limit);
+    }
+
+    dispose(): void {
+        if (this.changeTimer) {
+            clearTimeout(this.changeTimer);
+            this.changeTimer = undefined;
+        }
+        this.watcher?.dispose();
+        this.watcher = undefined;
+        for (const disposable of this.disposables) {
+            disposable.dispose();
+        }
+        this.disposables.length = 0;
+        this.changeEmitter.dispose();
+        this.output.dispose();
+    }
+
+    private readConfiguration(): void {
+        const config = vscode.workspace.getConfiguration('projectFileSearch');
+        this.include = sanitizePatterns(config.get<string[]>('include', DEFAULT_INCLUDE), DEFAULT_INCLUDE);
+        this.exclude = sanitizePatterns(config.get<string[]>('exclude', DEFAULT_EXCLUDE), []);
+    }
+
+    private setupWatcher(): void {
+        this.watcher?.dispose();
+        this.watcher = undefined;
+        try {
+            this.watcher = vscode.workspace.createFileSystemWatcher(
+                this.globOf(this.include) ?? '**/*',
+                false,
+                true,
+                false,
+            );
+        } catch (error) {
+            this.output.appendLine(`[error] Failed to watch workspace files: ${describeError(error)}`);
+            return;
+        }
+        this.watcher.onDidCreate((uri) => void this.handleCreate(uri));
+        this.watcher.onDidDelete((uri) => this.handleDelete(uri));
+    }
+
+    private async handleCreate(uri: vscode.Uri): Promise<void> {
+        if (this.shouldExclude(uri) || !this.matchesInclude(uri)) {
+            return;
+        }
+        try {
+            const stat = await vscode.workspace.fs.stat(uri);
+            // The watcher also reports directories; only files belong in the index.
+            if ((stat.type & vscode.FileType.File) === 0) {
+                return;
+            }
+        } catch {
+            return;
+        }
+        if (this.paths.has(uri.fsPath)) {
+            return;
+        }
+        const item = this.createItem(uri);
+        this.items.push(item);
+        this.paths.add(item.fsPath);
+        this.engine.add(item);
+        this.scheduleChange();
+    }
+
+    private handleDelete(uri: vscode.Uri): void {
+        if (!this.paths.delete(uri.fsPath)) {
+            return;
+        }
+        this.items = this.items.filter((item) => item.fsPath !== uri.fsPath);
+        this.engine.remove((item) => item.fsPath === uri.fsPath);
+        this.scheduleChange();
+    }
+
+    private createItem(uri: vscode.Uri): FileItem {
+        const relPath = this.relativePath(uri);
+        const slash = relPath.lastIndexOf('/');
+        const label = slash >= 0 ? relPath.slice(slash + 1) : relPath;
+        const description = slash >= 0 ? relPath.slice(0, slash) : '';
+        return {
+            label,
+            description,
+            relPath,
+            fsPath: uri.fsPath,
+            uri,
+            icon: FileIconProvider.getIcon(uri),
+        };
+    }
+
+    private relativePath(uri: vscode.Uri): string {
+        return vscode.workspace.asRelativePath(uri).replace(/\\/g, '/');
+    }
+
+    private matchesInclude(uri: vscode.Uri): boolean {
+        if (this.include.length === 0) {
+            return true;
+        }
+        const relative = this.relativePath(uri);
+        return this.include.some((pattern) => minimatch(relative, pattern, { dot: true }));
     }
 
     private shouldExclude(uri: vscode.Uri): boolean {
-        const relative = vscode.workspace.asRelativePath(uri);
-        return this.exclude.some((pattern) =>
-            minimatch(relative, pattern),
-        );
+        if (this.exclude.length === 0) {
+            return false;
+        }
+        const relative = this.relativePath(uri);
+        return this.exclude.some((pattern) => minimatch(relative, pattern, { dot: true }));
     }
 
-    search(query: string): FileItem[] {
-        if (!query) return this.items;
-        return this.fuseTool.search(query);
+    private scheduleChange(): void {
+        if (this.changeTimer) {
+            clearTimeout(this.changeTimer);
+        }
+        this.changeTimer = setTimeout(() => {
+            this.changeTimer = undefined;
+            this.fireChange();
+        }, 150);
     }
 
-    getAll(): FileItem[] {
-        return this.items;
+    private fireChange(): void {
+        this.changeEmitter.fire({ building: this.building, fileCount: this.items.length });
     }
 
-    dispose() {
-        this.watcher?.dispose();
+    /** Combines several glob patterns into one brace pattern. */
+    private globOf(patterns: string[]): string | undefined {
+        const cleaned = patterns.filter((pattern) => typeof pattern === 'string' && pattern.trim().length > 0);
+        if (cleaned.length === 0) {
+            return undefined;
+        }
+        return cleaned.length === 1 ? cleaned[0] : `{${cleaned.join(',')}}`;
     }
+}
+
+function sanitizePatterns(value: unknown, fallback: string[]): string[] {
+    if (!Array.isArray(value)) {
+        return fallback.slice();
+    }
+    const patterns = value.filter(
+        (pattern): pattern is string => typeof pattern === 'string' && pattern.trim().length > 0,
+    );
+    return fallback.length > 0 && patterns.length === 0 ? fallback.slice() : patterns;
+}
+
+function describeError(error: unknown): string {
+    return error instanceof Error ? `${error.message}` : String(error);
 }

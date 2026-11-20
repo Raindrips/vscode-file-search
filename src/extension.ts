@@ -1,47 +1,36 @@
 import * as vscode from 'vscode';
+import { FileSearchViewProvider } from './FileSearchViewProvider';
 import { ProjectFileIndex } from './ProjectFileIndex';
 
-export async function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext): void {
     const index = new ProjectFileIndex();
-    await index.init();
+    const provider = new FileSearchViewProvider(context.extensionUri, index, context);
 
-    const disposable = vscode.commands.registerCommand('projectFileSearch.search', async () => {
-        const quickPick = vscode.window.createQuickPick();
-        quickPick.placeholder = 'Search project files... v1.5';
-
-        quickPick.items = index.getAll().map((v,i) => ({
-            label:v.label,
-            description: v.description,
-            iconPath: v.iconPath,
-            resourceUri: v.uri,
-        }));
-
-        quickPick.onDidChangeValue((value) => {
-            const results = index.search(value);
-            quickPick.items = results.map((v) => ({
-                label: v.label,
-                description: v.description,
-                iconPath: v.iconPath,
-                resourceUri: v.uri,
-            }));
-        });
-
-        quickPick.onDidAccept(() => {
-            const selected = quickPick.selectedItems[0];
-            const file = index
-                .getAll()
-                .find((i) => i.label === selected.label && i.description === selected.description);
-            if (file && file.uri) {
-                vscode.window.showTextDocument(file.uri);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(FileSearchViewProvider.viewType, provider, {
+            webviewOptions: { retainContextWhenHidden: true },
+        }),
+        vscode.commands.registerCommand('projectFileSearch.search', () => {
+            if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+                void vscode.window.showInformationMessage(
+                    'File Search: open a folder before searching for files.',
+                );
+                return;
             }
-            quickPick.hide();
-        });
+            void vscode.commands.executeCommand('projectFileSearch.filesView.focus');
+            provider.focusInput();
+        }),
+        vscode.commands.registerCommand('projectFileSearch.refresh', () => {
+            void index.rebuild();
+        }),
+        provider,
+        index,
+    );
 
-        quickPick.show();
-    });
-
-    context.subscriptions.push(disposable);
-    context.subscriptions.push({ dispose: () => index.dispose() });
+    // Indexing runs in the background so the extension host never blocks on it.
+    void index.init();
 }
 
-export function deactivate() {}
+export function deactivate(): void {
+    // Nothing to clean up: every disposable is owned by the extension context.
+}

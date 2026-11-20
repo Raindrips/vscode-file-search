@@ -1,77 +1,115 @@
-# Project File Search
+# File Search
 
-[中文](#项目文件搜索)
+[中文](#文件搜索)
 
-A fast, clean, workspace‑only file name searcher.  
-It offers search functionality similar to `Ctrl+P`, but limits the search
-to files within the current workspace.Features
+A fast, workspace-only file name searcher with a dedicated sidebar view. The
+layout mirrors the built-in Search view (`Ctrl+Shift+F`): a search field, option
+toggles, a result count and a highlighted result list. Only file and folder names
+are matched — file contents are never searched.
 
-- Search project files by name
-- Configurable keybinding
-- Configurable include/exclude patterns
+## Features
+
+- Dedicated **File Search** view in the activity bar, laid out like the Search view.
+- Fuzzy file-name search limited to the current workspace.
+- **Match Case**, **Regular Expression** and **Include Folder Names** toggles.
+- Match highlighting in file and folder names, with per-type file icons.
+- Result count, indexing status and a note when results are truncated.
+- Keyboard-first interaction, including a context menu for common file actions.
+- Background file index kept up to date by a file system watcher.
+- Configurable include/exclude globs and a result limit.
 
 ## Why this extension?
 
-VS Code’s built‑in Ctrl+P mixes:
+VS Code's built-in `Ctrl+P` mixes:
 
 - recently opened files
 - files from other projects
 - diff views
 - temporary files
 
-This extension provides a **pure project file searcher** that only shows
-files inside the current workspace.
+This extension provides a **pure project file searcher** that only shows files
+inside the current workspace, in a persistent view instead of a modal picker.
 
 ## Usage
 
-Press `Ctrl+Alt+P` to open the file search panel. Or
-run:projectFileSearch.search
+Open the **File Search** view from the activity bar, press `Ctrl+Alt+P`, or run
+`File Search: Search Project Files` from the Command Palette.
+
+Type a file name to filter the workspace. Results update as the query changes.
+
+| Shortcut | Action |
+| --- | --- |
+| `Enter` | Open the selected file (preview) |
+| `Alt+Enter` or `Ctrl+Enter` | Open to the side |
+| `Alt+C` | Toggle Match Case |
+| `Alt+R` | Toggle Regular Expression |
+| `Alt+P` | Include folder names in the match |
+| `Arrow Up` / `Arrow Down` | Move the selection |
+| `Page Up` / `Page Down` | Move by ten results |
+| `Escape` | Clear the query; press again to return to the editor |
+
+Right-click a result to open it, open it to the side, reveal it in the Explorer,
+or copy its relative or absolute path. The Refresh File Index button in the view
+title rebuilds the index manually.
 
 ## Configuration
 
-Add these settings to your VS Code configuration:
-
 ```json
 {
-    "projectFileSearch.include": "**/*",
+    "projectFileSearch.include": [
+        "**/*"
+    ],
     "projectFileSearch.exclude": [
         "**/node_modules/**",
         "**/.git/**",
         "**/dist/**",
         "**/build/**"
-    ]
+    ],
+    "projectFileSearch.maxResults": 300
 }
 ```
 
-`projectFileSearch.include` Glob pattern for included files.
+`projectFileSearch.include` — Glob patterns for included files.
 
-`projectFileSearch.exclude` Glob patterns for excluded files.
+`projectFileSearch.exclude` — Glob patterns for excluded files.
+
+`projectFileSearch.maxResults` — Maximum number of rendered results (10–2000).
+A note is shown when more files match.
 
 ## Release Notes
 
 ### 0.0.1
 
 - QuickPick UI
-- Workspace‑only file search
+- Workspace-only file search
 - Fuzzy search
 
 ### 0.1.0
 
-- File catch index
+- File cache index
 - File system watcher
 - Include/exclude configuration
 
 ### 0.1.2
 
-- Modify the command key binding when.
+- Modify the command key binding `when` clause.
 
 ### 0.1.3
 
-- add File Icon.
+- Add file icons.
 
 ### 0.1.5
+
 - Optimize UI display
 - Optimize the search experience
+
+### 0.2.0
+
+- Replace the QuickPick with a dedicated sidebar view modeled on the Search view.
+- Add Match Case, Regular Expression and Include Folder Names toggles.
+- Add match highlighting, file-type icons, result counts and truncation notes.
+- Add a context menu, keyboard navigation and a result limit setting.
+- Keep the view state across reloads and refresh the index from the view title.
 
 ## License
 
@@ -79,52 +117,81 @@ MIT License
 
 ---
 
-# 项目文件搜索
+# 文件搜索
 
-一个快速、简洁、仅限工作区的文件名搜索器。  
-它提供类似 `Ctrl+P` 的搜索功能，但搜索范围严格限制在当前工作区内。
+[English](#file-search)
+
+一个快速、简洁、仅限工作区的文件名搜索器，拥有独立的侧边栏视图。界面布局
+参照内置的搜索视图（`Ctrl+Shift+F`）：搜索框、选项开关、结果计数和带高亮的
+结果列表。只匹配文件和文件夹名称，从不搜索文件内容。
 
 ## 功能特性
 
-- 按文件名搜索项目文件
-- 可配置快捷键
-- 可配置 include / exclude 模式
+- 活动栏中独立的 **File Search** 视图，布局与搜索视图一致。
+- 仅在当前工作区内进行模糊文件名搜索。
+- **匹配大小写**、**正则表达式**、**包含文件夹名称** 三个开关。
+- 文件名与文件夹名称中的匹配高亮，以及按文件类型区分的图标。
+- 结果计数、索引状态，以及结果被截断时的提示。
+- 以键盘操作为主，并提供常用文件操作的右键菜单。
+- 文件系统监听器在后台保持索引最新。
+- 可配置 include / exclude 模式与结果数量上限。
 
 ## 为什么需要这个扩展？
 
-VS Code 内置的 Ctrl+P 会混合以下内容：
+VS Code 内置的 `Ctrl+P` 会混合以下内容：
 
 - 最近打开的文件
 - 其他项目的文件
 - diff 视图
 - 临时文件
 
-本扩展提供一个 **纯净的项目文件搜索器**，只显示当前工作区内的文件。
+本扩展提供一个 **纯净的项目文件搜索器**，只显示当前工作区内的文件，并使用
+常驻视图代替模态选择器。
 
 ## 使用方法
 
-按下 `Ctrl+Alt+P` 打开文件搜索面板。  
-或运行命令：`projectFileSearch.search`
+从活动栏打开 **File Search** 视图，按下 `Ctrl+Alt+P`，或在命令面板中运行
+`File Search: Search Project Files`。
+
+输入文件名即可过滤工作区文件，结果随输入实时更新。
+
+| 快捷键 | 操作 |
+| --- | --- |
+| `Enter` | 打开选中的文件（预览） |
+| `Alt+Enter` 或 `Ctrl+Enter` | 在侧边打开 |
+| `Alt+C` | 切换匹配大小写 |
+| `Alt+R` | 切换正则表达式 |
+| `Alt+P` | 同时匹配文件夹名称 |
+| `Arrow Up` / `Arrow Down` | 移动选中项 |
+| `Page Up` / `Page Down` | 按十项移动 |
+| `Escape` | 清空搜索；再次按下返回编辑器 |
+
+右键单击结果可以打开文件、在侧边打开、在资源管理器中定位，或复制相对路径与
+绝对路径。视图标题栏中的 Refresh File Index 按钮可手动重建索引。
 
 ## 配置
 
-在 VS Code 设置中加入以下内容：
-
 ```json
 {
-    "projectFileSearch.include": "**/*",
+    "projectFileSearch.include": [
+        "**/*"
+    ],
     "projectFileSearch.exclude": [
         "**/node_modules/**",
         "**/.git/**",
         "**/dist/**",
         "**/build/**"
-    ]
+    ],
+    "projectFileSearch.maxResults": 300
 }
 ```
 
-`projectFileSearch.include`：用于包含文件的 Glob 模式。
+`projectFileSearch.include`：用于包含文件的 Glob 模式（数组）。
 
 `projectFileSearch.exclude`：用于排除文件的 Glob 模式。
+
+`projectFileSearch.maxResults`：最大渲染结果数（10–2000）。匹配数量更多时会
+显示提示。
 
 ## 更新日志
 
@@ -149,8 +216,17 @@ VS Code 内置的 Ctrl+P 会混合以下内容：
 - 添加文件图标
 
 ### 0.1.5
-- 优化UI展示
+
+- 优化 UI 展示
 - 优化搜索体验
+
+### 0.2.0
+
+- 使用参照搜索视图设计的独立侧边栏视图替换 QuickPick。
+- 新增匹配大小写、正则表达式、包含文件夹名称三个开关。
+- 新增匹配高亮、文件类型图标、结果计数与截断提示。
+- 新增右键菜单、键盘导航与结果数量上限设置。
+- 视图状态在重新加载后保留，并可从标题栏刷新索引。
 
 ## 许可
 
