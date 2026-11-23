@@ -2,6 +2,8 @@
 
 [中文](#文件搜索)
 
+![c213768c11d1e](res/c213768c11d1e.gif)
+
 A fast, workspace-only file name searcher with a dedicated sidebar view. The
 layout mirrors the built-in Search view (`Ctrl+Shift+F`): a search field, option
 toggles, a result count and a highlighted result list. Only file and folder names
