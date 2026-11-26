@@ -98,6 +98,7 @@ A note is shown when more files match.
 
 - Expand the default exclude list with common dependency, cache and metadata folders.
 - Prioritize file names over paths when a result row is truncated.
+- ⚡ Performance improvements: Enhanced startup speed and overall responsiveness for a smoother user experience.
 
 ### 0.2.0
 
@@ -223,6 +224,7 @@ MIT License
 
 - 扩展默认排除列表，覆盖常见依赖、缓存与元数据目录。
 - 结果行空间不足时优先保留文件名，路径先折叠。
+- ⚡ 性能优化：进一步提升启动速度和整体响应效率，带来更流畅的使用体验。
 
 ### 0.2.0
 

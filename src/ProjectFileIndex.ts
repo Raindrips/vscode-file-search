@@ -1,13 +1,10 @@
 import * as vscode from 'vscode';
 import { minimatch } from 'minimatch';
-import { FileIconInfo, FileIconProvider } from './FileIconProvider';
 import { SearchEngine, SearchOptions, SearchOutcome, SearchableFile } from './SearchEngine';
 
 export interface FileItem extends SearchableFile {
     /** Absolute path on disk. */
     fsPath: string;
-    uri: vscode.Uri;
-    icon: FileIconInfo;
 }
 
 export interface IndexState {
@@ -70,6 +67,7 @@ export class ProjectFileIndex implements vscode.Disposable {
     private include: string[] = DEFAULT_INCLUDE.slice();
     private exclude: string[] = DEFAULT_EXCLUDE.slice();
     private building = false;
+    private started = false;
     private rebuildQueued = false;
     private changeTimer: ReturnType<typeof setTimeout> | undefined;
     private readonly output: vscode.OutputChannel = vscode.window.createOutputChannel('File Search');
@@ -82,6 +80,9 @@ export class ProjectFileIndex implements vscode.Disposable {
         this.readConfiguration();
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
+                if (!this.started) {
+                    return;
+                }
                 if (
                     event.affectsConfiguration('projectFileSearch.include') ||
                     event.affectsConfiguration('projectFileSearch.exclude')
@@ -90,11 +91,22 @@ export class ProjectFileIndex implements vscode.Disposable {
                 }
             }),
         );
-        this.setupWatcher();
     }
 
     get state(): IndexState {
         return { building: this.building, fileCount: this.items.length };
+    }
+
+    /**
+     * Starts the initial index build on first demand (the view becomes visible).
+     * Activation alone does not scan the workspace.
+     */
+    start(): void {
+        if (this.started) {
+            return;
+        }
+        this.started = true;
+        void this.init();
     }
 
     /** Builds the initial index. Never throws; failures are reported. */
@@ -104,6 +116,7 @@ export class ProjectFileIndex implements vscode.Disposable {
 
     /** Rebuilds the index from scratch, watching the new configuration. */
     async rebuild(): Promise<void> {
+        this.started = true;
         if (this.building) {
             this.rebuildQueued = true;
             return;
@@ -224,8 +237,6 @@ export class ProjectFileIndex implements vscode.Disposable {
             description,
             relPath,
             fsPath: uri.fsPath,
-            uri,
-            icon: FileIconProvider.getIcon(uri),
         };
     }
 

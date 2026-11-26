@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { FileIconProvider } from './FileIconProvider';
 import { FileItem, ProjectFileIndex } from './ProjectFileIndex';
 import { SearchMatch, SearchOptions } from './SearchEngine';
 import { getWebviewHtml } from './WebviewHtml';
@@ -74,6 +75,9 @@ export class FileSearchViewProvider implements vscode.WebviewViewProvider, vscod
             scriptUri: webviewView.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'search.js')),
             cspSource: webviewView.webview.cspSource,
         });
+
+        // Indexing starts only when the view is actually opened.
+        this.index.start();
 
         this.disposables.push(
             webviewView.webview.onDidReceiveMessage((message: unknown) => this.handleMessage(message)),
@@ -277,13 +281,14 @@ export class FileSearchViewProvider implements vscode.WebviewViewProvider, vscod
 
 function toPayload(match: SearchMatch<FileItem>): ResultPayload {
     const item = match.item;
+    const icon = FileIconProvider.getIcon(item.fsPath);
     return {
         fsPath: item.fsPath,
         relPath: item.relPath,
         name: item.label,
         dir: item.description,
-        icon: item.icon.kind,
-        color: item.icon.color,
+        icon: icon.kind,
+        color: icon.color,
         nameMatches: match.nameMatches,
         dirMatches: match.dirMatches,
     };

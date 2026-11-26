@@ -1,5 +1,4 @@
 import * as path from 'path';
-import * as vscode from 'vscode';
 
 /** Icon shape drawn in the webview; see `media/search.js`. */
 export type FileIconKind =
@@ -170,8 +169,8 @@ const BY_EXTENSION: Record<string, FileIconInfo> = {
 
 export class FileIconProvider {
     /** Returns the icon shape and accent color used by the search webview. */
-    static getIcon(uri: vscode.Uri): FileIconInfo {
-        const fileName = path.basename(uri.fsPath).toLowerCase();
+    static getIcon(fsPath: string): FileIconInfo {
+        const fileName = path.basename(fsPath).toLowerCase();
 
         const byName = BY_FILE_NAME[fileName];
         if (byName) {

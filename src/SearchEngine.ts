@@ -2,7 +2,8 @@
  * Search engine behind the file search view.
  *
  * The module deliberately has no dependency on the `vscode` module so that it
- * can be exercised from plain Node.js.
+ * can be exercised from plain Node.js. Fuzzy matching is implemented here
+ * instead of relying on an external index.
  */
 
 export interface SearchableFile {
@@ -45,36 +46,110 @@ export interface SearchOutcome<T extends SearchableFile = SearchableFile> {
     invalidRegex: boolean;
 }
 
-interface RawFuseMatch {
-    key?: string;
-    indices: ReadonlyArray<MatchRange>;
-}
-
-interface RawFuseResult<T> {
+interface Candidate<T> {
     item: T;
-    refIndex: number;
-    matches?: ReadonlyArray<RawFuseMatch>;
+    score: number;
+    order: number;
 }
 
-interface FuseInstance<T> {
-    search(pattern: string): RawFuseResult<T>[];
-    setCollection(items: readonly T[]): void;
-    add(item: T): void;
-    remove(predicate: (item: T, index: number) => boolean): void;
+/** Orders candidates from best to worst. */
+function isWorse<T extends SearchableFile>(a: Candidate<T>, b: Candidate<T>): boolean {
+    if (a.score !== b.score) {
+        return a.score < b.score;
+    }
+    if (a.item.label.length !== b.item.label.length) {
+        return a.item.label.length > b.item.label.length;
+    }
+    if (a.item.relPath.length !== b.item.relPath.length) {
+        return a.item.relPath.length > b.item.relPath.length;
+    }
+    return a.order > b.order;
 }
 
-interface FuseConstructor {
-    new <T>(list: readonly T[], options: Record<string, unknown>): FuseInstance<T>;
+function isBetter<T extends SearchableFile>(item: T, score: number, order: number, other: Candidate<T>): boolean {
+    if (score !== other.score) {
+        return score > other.score;
+    }
+    if (item.label.length !== other.item.label.length) {
+        return item.label.length < other.item.label.length;
+    }
+    if (item.relPath.length !== other.item.relPath.length) {
+        return item.relPath.length < other.item.relPath.length;
+    }
+    return order < other.order;
 }
 
-// fuse.js v6 is published as a CommonJS module whose `module.exports` is the
-// constructor itself (there is no `default` export), hence the plain require.
-const Fuse = require('fuse.js') as FuseConstructor;
+/** Bounded min-heap that keeps only the best `limit` candidates. */
+class TopMatches<T extends SearchableFile> {
+    private readonly heap: Candidate<T>[] = [];
+
+    constructor(private readonly limit: number) {}
+
+    push(item: T, score: number, order: number): void {
+        if (this.limit <= 0) {
+            return;
+        }
+        if (this.heap.length < this.limit) {
+            this.heap.push({ item, score, order });
+            this.siftUp(this.heap.length - 1);
+            return;
+        }
+        if (!isBetter(item, score, order, this.heap[0])) {
+            return;
+        }
+        this.heap[0] = { item, score, order };
+        this.siftDown(0);
+    }
+
+    toArray(): Candidate<T>[] {
+        return this.heap.slice().sort((a, b) => {
+            if (isWorse(a, b)) {
+                return 1;
+            }
+            if (isWorse(b, a)) {
+                return -1;
+            }
+            return 0;
+        });
+    }
+
+    private siftUp(start: number): void {
+        let index = start;
+        while (index > 0) {
+            const parent = (index - 1) >> 1;
+            if (!isWorse(this.heap[index], this.heap[parent])) {
+                break;
+            }
+            [this.heap[index], this.heap[parent]] = [this.heap[parent], this.heap[index]];
+            index = parent;
+        }
+    }
+
+    private siftDown(start: number): void {
+        let index = start;
+        const length = this.heap.length;
+        for (;;) {
+            const left = index * 2 + 1;
+            const right = left + 1;
+            let worst = index;
+            if (left < length && isWorse(this.heap[left], this.heap[worst])) {
+                worst = left;
+            }
+            if (right < length && isWorse(this.heap[right], this.heap[worst])) {
+                worst = right;
+            }
+            if (worst === index) {
+                return;
+            }
+            [this.heap[index], this.heap[worst]] = [this.heap[worst], this.heap[index]];
+            index = worst;
+        }
+    }
+}
 
 export class SearchEngine<T extends SearchableFile> {
     private items: T[];
-    private fuse: FuseInstance<T> | undefined;
-    private fuseKey = '';
+    private readonly lowerCache = new WeakMap<T, { label?: string; relPath?: string }>();
 
     constructor(items: T[] = []) {
         this.items = items;
@@ -86,17 +161,14 @@ export class SearchEngine<T extends SearchableFile> {
 
     setCollection(items: T[]): void {
         this.items = items;
-        this.fuse?.setCollection(items);
     }
 
     add(item: T): void {
         this.items.push(item);
-        this.fuse?.add(item);
     }
 
     remove(predicate: (item: T) => boolean): void {
         this.items = this.items.filter((item) => !predicate(item));
-        this.fuse?.remove(predicate);
     }
 
     /**
@@ -115,28 +187,50 @@ export class SearchEngine<T extends SearchableFile> {
     }
 
     private searchFuzzy(query: string, options: SearchOptions, limit: number): SearchOutcome<T> {
-        const results = this.ensureFuse(options).search(query);
-        // Fuse treats a case difference as a small fuzzy error, so `isCaseSensitive`
-        // alone still lets `file` match `File`. Filtering on a case-exact
-        // subsequence makes the toggle mean what its label promises.
-        const filtered = options.caseSensitive
-            ? results.filter((result) =>
-                  containsSubsequence(
-                      options.matchPath ? result.item.relPath : result.item.label,
-                      query,
-                  ),
-              )
-            : results;
-        const truncated = filtered.length > limit;
-        const visible = truncated ? filtered.slice(0, limit) : filtered;
-        const matches = visible.map((result) => {
-            // Fuse's own ranges scatter across the whole value, so highlights are
-            // derived from the query instead: substring first, then subsequence.
-            const text = options.matchPath ? result.item.relPath : result.item.label;
-            const ranges = highlightRanges(text, query, options.caseSensitive);
-            return this.toSearchMatch(result.item, ranges, options.matchPath);
+        const tokens = query.split(/\s+/).filter((token) => token.length > 0);
+        if (tokens.length === 0) {
+            return { matches: [], truncated: false, invalidRegex: false };
+        }
+        const normalizedTokens = tokens.map((token) =>
+            options.caseSensitive ? token : token.toLowerCase(),
+        );
+        const top = new TopMatches<T>(limit);
+        let matchCount = 0;
+        let order = 0;
+
+        for (const item of this.items) {
+            const text = options.caseSensitive
+                ? options.matchPath
+                    ? item.relPath
+                    : item.label
+                : this.lowerText(item, options.matchPath);
+
+            let score = 0;
+            let matched = true;
+            for (const token of normalizedTokens) {
+                const tokenScore = scoreToken(text, token);
+                if (tokenScore === null) {
+                    matched = false;
+                    break;
+                }
+                score += tokenScore;
+            }
+            if (!matched) {
+                continue;
+            }
+
+            matchCount += 1;
+            top.push(item, score, order);
+            order += 1;
+        }
+
+        const matches = top.toArray().map(({ item }) => {
+            const text = options.matchPath ? item.relPath : item.label;
+            const ranges = collectHighlightRanges(text, tokens, options.caseSensitive);
+            return this.toSearchMatch(item, ranges, options.matchPath);
         });
-        return { matches, truncated, invalidRegex: false };
+
+        return { matches, truncated: matchCount > limit, invalidRegex: false };
     }
 
     private searchWithRegex(query: string, options: SearchOptions, limit: number): SearchOutcome<T> {
@@ -178,22 +272,116 @@ export class SearchEngine<T extends SearchableFile> {
         return { item, nameMatches: split.nameMatches, dirMatches: split.dirMatches };
     }
 
-    /** Creates (or reuses) a Fuse instance for the given matching mode. */
-    private ensureFuse(options: SearchOptions): FuseInstance<T> {
-        const key = `${options.caseSensitive ? 'case' : 'nocase'}:${options.matchPath ? 'path' : 'name'}`;
-        if (!this.fuse || this.fuseKey !== key) {
-            this.fuse = new Fuse(this.items, {
-                keys: [options.matchPath ? 'relPath' : 'label'],
-                threshold: 0.35,
-                ignoreLocation: true,
-                minMatchCharLength: 1,
-                isCaseSensitive: options.caseSensitive,
-                shouldSort: true,
-            });
-            this.fuseKey = key;
+    /** Caches lowercased names and paths on first use, per matching mode. */
+    private lowerText(item: T, matchPath: boolean): string {
+        let cached = this.lowerCache.get(item);
+        if (!cached) {
+            cached = {};
+            this.lowerCache.set(item, cached);
         }
-        return this.fuse;
+        if (matchPath) {
+            if (cached.relPath === undefined) {
+                cached.relPath = item.relPath.toLowerCase();
+            }
+            return cached.relPath;
+        }
+        if (cached.label === undefined) {
+            cached.label = item.label.toLowerCase();
+        }
+        return cached.label;
     }
+}
+
+/**
+ * Scores one whitespace-separated query token against a name or path.
+ * Returns `null` when the token is neither a substring nor a subsequence.
+ */
+function scoreToken(text: string, token: string): number | null {
+    if (text.length === 0 || token.length === 0) {
+        return null;
+    }
+
+    let best: number | null = null;
+    let index = text.indexOf(token);
+    let occurrences = 0;
+    while (index !== -1 && occurrences < 20) {
+        let score = 1200;
+        if (index === 0) {
+            score += 400;
+        } else if (isSeparator(text.charCodeAt(index - 1))) {
+            score += 200;
+        }
+        score -= Math.min(index, 100) * 2;
+        score -= text.length * 0.05;
+        if (best === null || score > best) {
+            best = score;
+        }
+        occurrences += 1;
+        index = text.indexOf(token, index + 1);
+    }
+    if (best !== null) {
+        return best;
+    }
+
+    let cursor = 0;
+    let first = -1;
+    let last = -1;
+    for (let position = 0; position < text.length && cursor < token.length; position += 1) {
+        if (text.charCodeAt(position) !== token.charCodeAt(cursor)) {
+            continue;
+        }
+        if (first < 0) {
+            first = position;
+        }
+        last = position;
+        cursor += 1;
+    }
+    if (cursor < token.length) {
+        return null;
+    }
+
+    const span = last - first + 1;
+    let score = 700 - (span - token.length) * 8 - first * 3 - (text.length - token.length) * 0.1;
+    if (first === 0) {
+        score += 150;
+    } else if (isSeparator(text.charCodeAt(first - 1))) {
+        score += 80;
+    }
+    return score > 1 ? score : 1;
+}
+
+function isSeparator(code: number): boolean {
+    return (
+        code === 47 || // /
+        code === 92 || // \
+        code === 45 || // -
+        code === 95 || // _
+        code === 46 || // .
+        code === 32 || // space
+        code === 40 || // (
+        code === 41 || // )
+        code === 91 || // [
+        code === 93 || // ]
+        code === 64 // @
+    );
+}
+
+/** Combines the highlight ranges of every query token. */
+function collectHighlightRanges(
+    text: string,
+    tokens: readonly string[],
+    caseSensitive: boolean,
+): MatchRange[] {
+    if (tokens.length === 1) {
+        return highlightRanges(text, tokens[0], caseSensitive);
+    }
+    const ranges: MatchRange[] = [];
+    for (const token of tokens) {
+        for (const range of highlightRanges(text, token, caseSensitive)) {
+            ranges.push(range);
+        }
+    }
+    return normalizeRanges(ranges, text.length);
 }
 
 /**
@@ -269,21 +457,9 @@ export function normalizeRanges(ranges: readonly MatchRange[], length: number): 
     return merged;
 }
 
-/** Case-exact in-order character match, used to enforce "Match Case" in fuzzy mode. */
-function containsSubsequence(text: string, query: string): boolean {
-    let cursor = 0;
-    for (let index = 0; index < text.length && cursor < query.length; index += 1) {
-        if (text[index] === query[cursor]) {
-            cursor += 1;
-        }
-    }
-    return cursor === query.length;
-}
-
 /**
- * Highlight ranges derived from the query itself. Fuse's own indices scatter
- * across the whole value, so an exact substring is preferred and a scattered
- * subsequence is used only when the fuzzy match has no exact run.
+ * Highlight ranges derived from the query itself. An exact substring is
+ * preferred and a scattered subsequence is used only when there is no exact run.
  */
 function highlightRanges(text: string, query: string, caseSensitive: boolean): MatchRange[] {
     const exact = substringRanges(text, query, caseSensitive);

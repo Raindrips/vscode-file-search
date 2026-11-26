@@ -27,8 +27,7 @@ export function activate(context: vscode.ExtensionContext): void {
         index,
     );
 
-    // Indexing runs in the background so the extension host never blocks on it.
-    void index.init();
+    // The index starts on demand from the view; activation stays cheap.
 }
 
 export function deactivate(): void {
