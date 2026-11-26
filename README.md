@@ -4,28 +4,21 @@
 
 ![c213768c11d1e](res/c213768c11d1e.gif)
 
-A fast, workspace-only file name searcher with a dedicated sidebar view. The
-layout mirrors the built-in Search view (`Ctrl+Shift+F`): a search field, option
-toggles, a result count and a highlighted result list. Only file and folder names
-are matched — file contents are never searched.
+A fast, workspace-only file name searcher with a dedicated sidebar view. It matches
+only file and folder names — file contents are never searched. The layout follows
+VS Code's built-in Search view: a search field, option toggles, a result count and
+a highlighted result list.
 
-## Features
-
-- Dedicated **File Search** view in the activity bar, laid out like the Search view.
-- Fuzzy file-name search limited to the current workspace.
-- **Match Case**, **Regular Expression** and **Include Folder Names** toggles.
-- Match highlighting in file and folder names, with per-type file icons.
-- Result count, indexing status and a note when results are truncated.
-- Keyboard-first interaction, including a context menu for common file actions.
-- Background file index kept up to date by a file system watcher.
-- Configurable include/exclude globs and a result limit.
 
 ## Usage
 
-Open the **File Search** view from the activity bar, press `Ctrl+Alt+P`, or run
-`File Search: Search Project Files` from the Command Palette.
+The view needs an open workspace folder. Open it with any one of these:
 
-Type a file name to filter the workspace. Results update as the query changes.
+- Click the **File Search** icon in the activity bar.
+- Press `Ctrl+Alt+P`.
+- Run `File Search: Search Project Files` from the Command Palette.
+
+Then type a file name to filter the workspace. Results update as the query changes.
 
 | Shortcut | Action |
 | --- | --- |
@@ -41,6 +34,21 @@ Type a file name to filter the workspace. Results update as the query changes.
 Right-click a result to open it, open it to the side, reveal it in the Explorer,
 or copy its relative or absolute path. The Refresh File Index button in the view
 title rebuilds the index manually.
+
+## Features
+
+- Fuzzy matching on file and folder names, limited to the current workspace. Results
+  update as the query changes.
+- **Match Case**, **Regular Expression** and **Include Folder Names** toggles.
+- Match highlighting, per-type file icons, a result count and a note when results
+  are truncated.
+- Keyboard-only operation for opening files, toggling options and moving the
+  selection.
+- A context menu to open a result, open it to the side, reveal it in the Explorer or
+  copy its path.
+- The index refreshes itself in the background, so added and removed files show up
+  without a manual refresh.
+- Configurable include/exclude globs and a result limit.
 
 ## Configuration
 
@@ -132,27 +140,19 @@ MIT License
 
 [English](#file-search)
 
-一个快速、仅限工作区的文件名搜索器，拥有独立的侧边栏视图。界面布局参照内置
-的搜索视图（`Ctrl+Shift+F`）：搜索框、选项开关、结果计数和带高亮的结果列表。
-只匹配文件和文件夹名称，从不搜索文件内容。
-
-## 功能特性
-
-- 活动栏中独立的 **File Search** 视图，布局与搜索视图一致。
-- 仅在当前工作区内进行模糊文件名搜索。
-- **匹配大小写**、**正则表达式**、**包含文件夹名称** 三个开关。
-- 文件名与文件夹名称中的匹配高亮，以及按文件类型区分的图标。
-- 结果计数、索引状态，以及结果被截断时的提示。
-- 以键盘操作为主，并提供常用文件操作的右键菜单。
-- 文件系统监听器在后台保持索引最新。
-- 可配置 include / exclude 模式与结果数量上限。
+一个只在当前工作区内按文件名搜索的扩展，提供独立的侧边栏视图，只匹配文件和
+文件夹名称，不读取文件内容。界面布局参照 VS Code 自带的搜索视图：搜索框、
+选项开关、结果计数和带高亮的结果列表。
 
 ## 使用方法
 
-从活动栏打开 **File Search** 视图，按下 `Ctrl+Alt+P`，或在命令面板中运行
-`File Search: Search Project Files`。
+需要先打开一个工作区。打开 **File Search** 视图的方式任选其一：
 
-输入文件名即可过滤工作区文件，结果随输入实时更新。
+- 点击活动栏中的 **File Search** 图标。
+- 按 `Ctrl+Alt+P`。
+- 在命令面板中运行 `File Search: Search Project Files`。
+
+打开视图后输入文件名即可过滤工作区文件，结果随输入实时更新。
 
 | 快捷键 | 操作 |
 | --- | --- |
@@ -167,6 +167,16 @@ MIT License
 
 右键单击结果可以打开文件、在侧边打开、在资源管理器中定位，或复制相对路径与
 绝对路径。视图标题栏中的 Refresh File Index 按钮可手动重建索引。
+
+## 功能特性
+
+- 模糊匹配文件与文件夹名称，只限当前工作区，结果随输入实时更新。
+- **匹配大小写**、**正则表达式**、**包含文件夹名称** 三个开关。
+- 匹配高亮、按文件类型区分的图标，以及结果计数与结果被截断时的提示。
+- 打开文件、切换选项、移动选中项都可以只用键盘完成。
+- 右键菜单可打开文件、在侧边打开、在资源管理器中定位，或复制路径。
+- 索引在后台自动更新，文件的增删无需手动刷新。
+- include / exclude 模式与结果数量上限可配置。
 
 ## 配置
 
