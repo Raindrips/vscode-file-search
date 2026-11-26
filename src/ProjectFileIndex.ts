@@ -18,7 +18,44 @@ export interface IndexState {
 }
 
 const DEFAULT_INCLUDE = ['**/*'];
-const DEFAULT_EXCLUDE = ['**/node_modules/**', '**/.git/**'];
+const DEFAULT_EXCLUDE = [
+    // Dependencies and version-control metadata
+    '**/node_modules/**',
+    '**/bower_components/**',
+    '**/.git/**',
+    '**/.svn/**',
+    '**/.hg/**',
+    // IDE metadata
+    '**/.idea/**',
+    '**/.vs/**',
+    // Python caches and virtual environments
+    '**/__pycache__/**',
+    '**/.pytest_cache/**',
+    '**/.mypy_cache/**',
+    '**/.ruff_cache/**',
+    '**/.tox/**',
+    '**/.venv/**',
+    // JVM build caches
+    '**/.gradle/**',
+    // JS/TS framework and monorepo caches
+    '**/.next/**',
+    '**/.nuxt/**',
+    '**/.svelte-kit/**',
+    '**/.angular/**',
+    '**/.turbo/**',
+    '**/.nx/**',
+    '**/.parcel-cache/**',
+    // Package-manager metadata
+    '**/.yarn/**',
+    // Infrastructure state
+    '**/.terraform/**',
+    // Apple toolchain output
+    '**/Pods/**',
+    '**/DerivedData/**',
+    // OS metadata files
+    '**/.DS_Store',
+    '**/Thumbs.db',
+];
 
 /**
  * Keeps an up-to-date list of the files in the workspace and answers file name

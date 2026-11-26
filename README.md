@@ -51,7 +51,32 @@ title rebuilds the index manually.
     ],
     "projectFileSearch.exclude": [
         "**/node_modules/**",
-        "**/.git/**"
+        "**/bower_components/**",
+        "**/.git/**",
+        "**/.svn/**",
+        "**/.hg/**",
+        "**/.idea/**",
+        "**/.vs/**",
+        "**/__pycache__/**",
+        "**/.pytest_cache/**",
+        "**/.mypy_cache/**",
+        "**/.ruff_cache/**",
+        "**/.tox/**",
+        "**/.venv/**",
+        "**/.gradle/**",
+        "**/.next/**",
+        "**/.nuxt/**",
+        "**/.svelte-kit/**",
+        "**/.angular/**",
+        "**/.turbo/**",
+        "**/.nx/**",
+        "**/.parcel-cache/**",
+        "**/.yarn/**",
+        "**/.terraform/**",
+        "**/Pods/**",
+        "**/DerivedData/**",
+        "**/.DS_Store",
+        "**/Thumbs.db"
     ],
     "projectFileSearch.maxResults": 300
 }
@@ -60,38 +85,19 @@ title rebuilds the index manually.
 `projectFileSearch.include` — Glob patterns for included files.
 
 `projectFileSearch.exclude` — Glob patterns for excluded files. The defaults
-skip `.git` and `node_modules`; add more patterns to exclude generated folders
-such as `dist` or `build`.
+cover dependency folders, VCS/IDE metadata, Python and JS/TS caches, Terraform
+state, CocoaPods output and OS metadata. Add project-specific generated folders
+such as `dist` or `build` here.
 
 `projectFileSearch.maxResults` — Maximum number of rendered results (10–2000).
 A note is shown when more files match.
 
 ## Release Notes
 
-### 0.0.1
+### 0.2.1
 
-- QuickPick UI
-- Workspace-only file search
-- Fuzzy search
-
-### 0.1.0
-
-- File cache index
-- File system watcher
-- Include/exclude configuration
-
-### 0.1.2
-
-- Modify the command key binding `when` clause.
-
-### 0.1.3
-
-- Add file icons.
-
-### 0.1.5
-
-- Optimize UI display.
-- Optimize the search experience.
+- Expand the default exclude list with common dependency, cache and metadata folders.
+- Prioritize file names over paths when a result row is truncated.
 
 ### 0.2.0
 
@@ -101,6 +107,19 @@ A note is shown when more files match.
 - Add a context menu, keyboard navigation and a result limit setting.
 - Keep the view state across reloads and refresh the index from the view title.
 - Update the activity bar icon to a magnifier containing a file.
+
+### 0.0.0-0.1.5
+
+- QuickPick UI
+- Workspace-only file search
+- Fuzzy search
+- File cache index
+- File system watcher
+- Include/exclude configuration
+- Modify the command key binding `when` clause.
+- Add file icons.
+- Optimize UI display.
+- Optimize the search experience.
 
 ## License
 
@@ -157,7 +176,32 @@ MIT License
     ],
     "projectFileSearch.exclude": [
         "**/node_modules/**",
-        "**/.git/**"
+        "**/bower_components/**",
+        "**/.git/**",
+        "**/.svn/**",
+        "**/.hg/**",
+        "**/.idea/**",
+        "**/.vs/**",
+        "**/__pycache__/**",
+        "**/.pytest_cache/**",
+        "**/.mypy_cache/**",
+        "**/.ruff_cache/**",
+        "**/.tox/**",
+        "**/.venv/**",
+        "**/.gradle/**",
+        "**/.next/**",
+        "**/.nuxt/**",
+        "**/.svelte-kit/**",
+        "**/.angular/**",
+        "**/.turbo/**",
+        "**/.nx/**",
+        "**/.parcel-cache/**",
+        "**/.yarn/**",
+        "**/.terraform/**",
+        "**/Pods/**",
+        "**/DerivedData/**",
+        "**/.DS_Store",
+        "**/Thumbs.db"
     ],
     "projectFileSearch.maxResults": 300
 }
@@ -165,38 +209,20 @@ MIT License
 
 `projectFileSearch.include`：用于包含文件的 Glob 模式（数组）。
 
-`projectFileSearch.exclude`：用于排除文件的 Glob 模式。默认跳过 `.git` 与
-`node_modules`；如需排除 `dist`、`build` 等生成目录，可继续添加模式。
+`projectFileSearch.exclude`：用于排除文件的 Glob 模式。默认值覆盖依赖目录、
+版本控制与 IDE 元数据、Python 与 JS/TS 缓存、Terraform 状态、CocoaPods 产物
+以及系统元数据文件；如需排除 `dist`、`build` 等项目自身的生成目录，可在此
+添加。
 
 `projectFileSearch.maxResults`：最大渲染结果数（10–2000）。匹配数量更多时会
 显示提示。
 
 ## 更新日志
 
-### 0.0.1
+### 0.2.1
 
-- 使用 QuickPick UI
-- 仅限工作区的文件搜索
-- 模糊搜索
-
-### 0.1.0
-
-- 文件缓存索引
-- 文件系统监听
-- include/exclude 配置支持
-
-### 0.1.2
-
-- 修改命令键绑定的 `when` 条件。
-
-### 0.1.3
-
-- 添加文件图标。
-
-### 0.1.5
-
-- 优化 UI 显示。
-- 优化搜索体验。
+- 扩展默认排除列表，覆盖常见依赖、缓存与元数据目录。
+- 结果行空间不足时优先保留文件名，路径先折叠。
 
 ### 0.2.0
 
@@ -206,6 +232,19 @@ MIT License
 - 新增右键菜单、键盘导航与结果数量上限设置。
 - 视图状态在重新加载后保留，并可从标题栏刷新索引。
 - 活动栏图标改为放大镜内含文件图案。
+
+### 0.0.0-0.1.5
+
+- 使用 QuickPick UI
+- 仅限工作区的文件搜索
+- 模糊搜索
+- 文件缓存索引
+- 文件系统监听
+- include/exclude 配置支持
+- 修改命令键绑定的 `when` 条件。
+- 添加文件图标。
+- 优化 UI 显示。
+- 优化搜索体验。
 
 ## 许可
 

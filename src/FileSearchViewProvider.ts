@@ -69,7 +69,7 @@ export class FileSearchViewProvider implements vscode.WebviewViewProvider, vscod
             enableScripts: true,
             localResourceRoots: [mediaRoot],
         };
-        webviewView.webview.html = getWebviewHtml({
+        webviewView.webview.html = getWebviewHtml(vscode.Uri.joinPath(mediaRoot, 'search.html').fsPath, {
             styleUri: webviewView.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'search.css')),
             scriptUri: webviewView.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'search.js')),
             cspSource: webviewView.webview.cspSource,

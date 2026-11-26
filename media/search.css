@@ -296,7 +296,10 @@ button {
 }
 
 .file-name {
-    flex: 0 1 auto;
+    /* Names keep their natural width; only the path gives up space.
+       A name wider than the row still ellipsizes on its own. */
+    flex: 0 0 auto;
+    max-width: 100%;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -304,6 +307,7 @@ button {
 }
 
 .file-dir {
+    /* The path absorbs all missing width and collapses before the name. */
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
